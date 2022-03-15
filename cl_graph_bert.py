@@ -90,8 +90,8 @@ class CLIPGraphModel(torch.nn.Module):
             raise ValueError("image_model must be either 'vit' or 'resnet'")
         self.language_projection = Projection(language_embedding_dim, embedding_dim).double()
 
-    def forward(self, g, tokens, ids):
-        graph_output = self.graph_model.forward(g)["Review"][ids].type(torch.float64)
+    def forward(self, g, vertex_type, tokens, ids):
+        graph_output = self.graph_model.forward(g)[vertex_type][ids].type(torch.float64)
         # Shape of graph_out_dim x batch_size
         graph_emb = self.graph_projection(graph_output)
         # Shape of emb_dim x batch_size
@@ -112,8 +112,8 @@ class CLIPGraphModel(torch.nn.Module):
         loss = (graph_loss + image_loss)/2
         return loss.mean(), logits
 
-    def get_embedding(self, g, tokens, ids):
-        graph_output = self.graph_model.forward(g)["Review"][ids].type(torch.float64)
+    def get_embedding(self, g, vertex_type, tokens, ids):
+        graph_output = self.graph_model.forward(g)[vertex_type][ids].type(torch.float64)
         # Shape of graph_out_dim x batch_size
         graph_emb = self.graph_projection(graph_output)
         # Shape of emb_dim x batch_size
