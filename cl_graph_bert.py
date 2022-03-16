@@ -69,7 +69,7 @@ class CLIPGraphModel(torch.nn.Module):
                  language_model="bert", 
                  graph_model="rgcn", 
                  embedding_dim=512,
-                 language_embedding_dim=786,
+                 language_embedding_dim=768,
                  graph_hidden_dim=256, 
                  graph_out_dim=256,
                  linear_proj_dropout=0.1):
@@ -98,6 +98,7 @@ class CLIPGraphModel(torch.nn.Module):
         language_output = self.language_model(input_ids = tokens['input_ids'], 
            attention_mask=tokens['attention_mask'], 
            token_type_ids=tokens['token_type_ids']).last_hidden_state[:,0].type(torch.float64)
+#         print(language_output.shape)
         language_emb = self.language_projection(language_output)
         
         language_emb = language_emb / language_emb.norm(dim=-1, keepdim=True)
