@@ -111,7 +111,7 @@ class CLIPGraphModel(torch.nn.Module):
         graph_loss = cross_entropy(logits, target)
         image_loss = cross_entropy(logits.T, target.T)
         loss = (graph_loss + image_loss)/2
-        return loss.mean(), logits
+        return {"loss": loss.mean(), "language_emb": language_emb, "graph_emb": graph_emb}
 
     def get_embedding(self, g, vertex_type, tokens, ids):
         graph_output = self.graph_model.forward(g)[vertex_type][ids].type(torch.float64)
@@ -125,5 +125,4 @@ class CLIPGraphModel(torch.nn.Module):
         
         language_emb = language_emb / language_emb.norm(dim=-1, keepdim=True)
         graph_emb = graph_emb / graph_emb.norm(dim=-1, keepdim=True)
-        logits = language_emb @ graph_emb.T
-        return logits
+        return {"language_emb": language_emb, "graph_emb": graph_emb}
