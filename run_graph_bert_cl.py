@@ -90,9 +90,10 @@ def tokens_to_cuda(tokens, device):
     return dictionary
 
 # %%
-epochs = 2
+epochs = 20
 
 model.train()
+prevBestValLoss = float("inf")
 
 for epoch in range(epochs):
     epoch_loss = 0
@@ -118,6 +119,9 @@ for epoch in range(epochs):
     print("End of Epoch", epoch)
     print("Training loss:", epoch_loss)
     print("Test loss:", val_loss)
+    if float(val_loss) < prevBestValLoss:
+        torch.save(model.state_dict(), "./base_statedict_{}.pt".format(float(val_loss)))
+        prevBestValLoss = float(val_loss)
 
 # %%
 class BertGraphMLP(nn.Module):
@@ -200,8 +204,5 @@ enc_methods = ["language_emb", "graph_emb", "mean"]
 for method in enc_methods:
     print("====== EVALUATING:", method, "======")
     evaluate_review_sentiment(model, method)
-
-# %%
-torch.save(model.state_dict(), "./base_statedict_{}.pt".format(float(val_loss)))
 
 
