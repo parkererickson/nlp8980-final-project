@@ -90,14 +90,14 @@ class CLIPGraphModel(torch.nn.Module):
             raise ValueError("image_model must be either 'vit' or 'resnet'")
         self.language_projection = Projection(language_embedding_dim, embedding_dim).double()
 
-    def forward(self, g, vertex_type, tokens, ids):
+    def forward(self, g, vertex_type, ids):
         graph_output = self.graph_model.forward(g)[vertex_type][ids].type(torch.float64)
         # Shape of graph_out_dim x batch_size
         graph_emb = self.graph_projection(graph_output)
         # Shape of emb_dim x batch_size
-        language_output = self.language_model(input_ids = tokens['input_ids'], 
-           attention_mask=tokens['attention_mask'], 
-           token_type_ids=tokens['token_type_ids']).last_hidden_state[:,0].type(torch.float64)
+        language_output = self.language_model(input_ids = g.nodes["Review"].data['input_ids'][ids], 
+           attention_mask=g.nodes["Review"].data['attention_mask'][ids], 
+           token_type_ids=g.nodes["Review"].data['token_type_ids'][ids]).last_hidden_state[:,0].type(torch.float64)
 #         print(language_output.shape)
         language_emb = self.language_projection(language_output)
         
@@ -118,9 +118,9 @@ class CLIPGraphModel(torch.nn.Module):
         # Shape of graph_out_dim x batch_size
         graph_emb = self.graph_projection(graph_output)
         # Shape of emb_dim x batch_size
-        language_output = self.language_model(input_ids = tokens['input_ids'], 
-           attention_mask=tokens['attention_mask'], 
-           token_type_ids=tokens['token_type_ids']).last_hidden_state[:,0].type(torch.float64)
+        language_output = self.language_model(input_ids = g.nodes["Review"].data['input_ids'][ids], 
+           attention_mask=g.nodes["Review"].data['attention_mask'][ids], 
+           token_type_ids=g.nodes["Review"].data['token_type_ids'][ids]).last_hidden_state[:,0].type(torch.float64)
         language_emb = self.language_projection(language_output)
         
         language_emb = language_emb / language_emb.norm(dim=-1, keepdim=True)
