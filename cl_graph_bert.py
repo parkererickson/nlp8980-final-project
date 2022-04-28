@@ -101,17 +101,16 @@ class CLIPGraphModel(torch.nn.Module):
 #         print(language_output.shape)
         language_emb = self.language_projection(language_output)
         
-        language_emb = language_emb / language_emb.norm(dim=-1, keepdim=True)
-        graph_emb = graph_emb / graph_emb.norm(dim=-1, keepdim=True)
-        logits = language_emb @ graph_emb.T
+        logits = language_emb @ graph_emb.T # language by graph
         #out = F.softmax(logits, dim=-1)
-        language_similarity = language_emb @ language_emb.T
-        graph_similarity = graph_emb @ graph_emb.T
-        target = F.softmax((language_similarity + graph_similarity)/2, dim=-1)
-        graph_loss = cross_entropy(logits, target)
-        image_loss = cross_entropy(logits.T, target.T)
-        loss = (graph_loss + image_loss)/2
-        return {"loss": loss.mean(), "language_emb": language_emb, "graph_emb": graph_emb}
+        #language_similarity = language_emb @ language_emb.T
+        #graph_similarity = graph_emb @ graph_emb.T
+        #target = F.softmax((language_similarity + graph_similarity)/2, dim=-1)
+        target = torch.arange(logits.shape[0])
+        graph_loss = F.cross_entropy(logits.T, target.reshape(-1))
+        lang_loss = F.cross_entropy(logits, target)
+        loss = (graph_loss + lang_loss)/2
+        return {"loss": loss, "language_emb": language_emb, "graph_emb": graph_emb}
 
     def get_embedding(self, g, vertex_type, tokens, ids):
         graph_output = self.graph_model.forward(g)[vertex_type][ids].type(torch.float64)
