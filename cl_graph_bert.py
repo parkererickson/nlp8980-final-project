@@ -72,7 +72,8 @@ class CLIPGraphModel(torch.nn.Module):
                  language_embedding_dim=768,
                  graph_hidden_dim=256, 
                  graph_out_dim=256,
-                 linear_proj_dropout=0.1):
+                 linear_proj_dropout=0.1,
+                 device="cpu"):
         super().__init__()
         if graph_model == "rgcn":
             self.graph_model = RGCN(emb_types = emb_types, 
@@ -106,7 +107,7 @@ class CLIPGraphModel(torch.nn.Module):
         #language_similarity = language_emb @ language_emb.T
         #graph_similarity = graph_emb @ graph_emb.T
         #target = F.softmax((language_similarity + graph_similarity)/2, dim=-1)
-        target = torch.arange(logits.shape[0])
+        target = torch.arange(logits.shape[0]).to(device)
         graph_loss = F.cross_entropy(logits.T, target.reshape(-1))
         lang_loss = F.cross_entropy(logits, target)
         loss = (graph_loss + lang_loss)/2
