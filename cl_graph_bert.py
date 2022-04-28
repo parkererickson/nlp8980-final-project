@@ -92,6 +92,7 @@ class CLIPGraphModel(torch.nn.Module):
         self.language_projection = Projection(language_embedding_dim, embedding_dim).double()
 
     def forward(self, g, vertex_type, ids):
+        device='cuda'
         graph_output = self.graph_model.forward(g)[vertex_type][ids].type(torch.float64)
         # Shape of graph_out_dim x batch_size
         graph_emb = self.graph_projection(graph_output)
