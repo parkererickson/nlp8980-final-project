@@ -11,29 +11,46 @@ import torch.nn as nn
 
 # Define a Heterograph Conv model
 
-class RGCN(nn.Module):
+# class RGCN(nn.Module):
+#     def __init__(self, emb_types, emb_size, hid_feats, out_feats, rel_names):
+#         super().__init__()
+#         # https://www.jianshu.com/p/767950b560c4
+#         embed_dict = {ntype : nn.Parameter(torch.Tensor(emb_types[ntype], emb_size))
+#                       for ntype in emb_types.keys()}
+#         for key, embed in embed_dict.items():
+#             nn.init.xavier_uniform_(embed)
+#         self.embed = nn.ParameterDict(embed_dict)
+#         self.conv1 = dglnn.HeteroGraphConv({
+#             rel: dglnn.GraphConv(emb_size, hid_feats)
+#             for rel in rel_names}, aggregate='sum')
+#         self.conv2 = dglnn.HeteroGraphConv({
+#             rel: dglnn.GraphConv(hid_feats, out_feats)
+#             for rel in rel_names}, aggregate='sum')
+#         self.outdim = out_feats
+
+#     def forward(self, graph):
+#         # inputs are features of nodes
+#         h = self.conv1(graph, self.embed)
+#         h = {k: F.relu(v) for k, v in h.items()}
+#         h = self.conv2(graph, h)
+#         return h
+    
+class StochasticTwoLayerRGCN(nn.Module):
     def __init__(self, emb_types, emb_size, hid_feats, out_feats, rel_names):
         super().__init__()
-        # https://www.jianshu.com/p/767950b560c4
-        embed_dict = {ntype : nn.Parameter(torch.Tensor(emb_types[ntype], emb_size))
-                      for ntype in emb_types.keys()}
-        for key, embed in embed_dict.items():
-            nn.init.xavier_uniform_(embed)
-        self.embed = nn.ParameterDict(embed_dict)
+        self.embed = HeteroEmbedding(emb_types, emb_size)
         self.conv1 = dglnn.HeteroGraphConv({
             rel: dglnn.GraphConv(emb_size, hid_feats)
-            for rel in rel_names}, aggregate='sum')
+            for rel in rel_names}, aggregate='mean')
         self.conv2 = dglnn.HeteroGraphConv({
             rel: dglnn.GraphConv(hid_feats, out_feats)
-            for rel in rel_names}, aggregate='sum')
-        self.outdim = out_feats
+            for rel in rel_names}, aggregate='mean')
 
-    def forward(self, graph):
-        # inputs are features of nodes
-        h = self.conv1(graph, self.embed)
-        h = {k: F.relu(v) for k, v in h.items()}
-        h = self.conv2(graph, h)
-        return h
+    def forward(self, blocks):
+        x = self.embed(blocks[0].ndata["_ID"])
+        x = self.conv1(blocks[0], x)
+        x = self.conv2(blocks[1], x)
+        return x
 
 def cross_entropy(logits, target, reduce='none'):
     ls = LogSoftmax(dim=-1)
@@ -76,7 +93,7 @@ class CLIPGraphModel(torch.nn.Module):
                  device="cpu"):
         super().__init__()
         if graph_model == "rgcn":
-            self.graph_model = RGCN(emb_types = emb_types, 
+            self.graph_model = StochasticTwoLayerRGCN(emb_types = emb_types, 
                  emb_size=graph_embedding_dim, 
                  hid_feats=graph_hidden_dim,
                  out_feats=graph_out_dim,
