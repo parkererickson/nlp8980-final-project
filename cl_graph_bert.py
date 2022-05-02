@@ -38,13 +38,14 @@ import torch.nn as nn
 class StochasticTwoLayerRGCN(nn.Module):
     def __init__(self, emb_types, emb_size, hid_feats, out_feats, rel_names):
         super().__init__()
-        self.embed = HeteroEmbedding(emb_types, emb_size)
+        self.embed = dglnn.HeteroEmbedding(emb_types, emb_size)
         self.conv1 = dglnn.HeteroGraphConv({
             rel: dglnn.GraphConv(emb_size, hid_feats)
             for rel in rel_names}, aggregate='mean')
         self.conv2 = dglnn.HeteroGraphConv({
             rel: dglnn.GraphConv(hid_feats, out_feats)
             for rel in rel_names}, aggregate='mean')
+        self.out_feats = out_feats
 
     def forward(self, blocks):
         x = self.embed(blocks[0].ndata["_ID"])
@@ -100,7 +101,7 @@ class CLIPGraphModel(torch.nn.Module):
                  rel_names=rel_types)
         else:
             raise ValueError("graph_model must be 'rgcn'")
-        self.graph_projection = Projection(self.graph_model.outdim, embedding_dim, dropout=linear_proj_dropout).double()
+        self.graph_projection = Projection(self.graph_model.out_feats, embedding_dim, dropout=linear_proj_dropout).double()
         if language_model == 'bert':  # TODO Make this work
             self.language_model_name = 'bert'
             self.language_model = BertModel.from_pretrained('bert-base-uncased')
