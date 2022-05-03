@@ -109,9 +109,9 @@ class CLIPGraphModel(torch.nn.Module):
             raise ValueError("image_model must be either 'vit' or 'resnet'")
         self.language_projection = Projection(language_embedding_dim, embedding_dim).double()
 
-    def forward(self, g, vertex_type, ids):
+    def forward(self, g, vertex_type, ids, blocks):
         device='cuda'
-        graph_output = self.graph_model.forward(g)[vertex_type][ids].type(torch.float64)
+        graph_output = self.graph_model.forward(blocks)[vertex_type].type(torch.float64)
         # Shape of graph_out_dim x batch_size
         graph_emb = self.graph_projection(graph_output)
         # Shape of emb_dim x batch_size
