@@ -109,15 +109,15 @@ class CLIPGraphModel(torch.nn.Module):
             raise ValueError("image_model must be either 'vit' or 'resnet'")
         self.language_projection = Projection(language_embedding_dim, embedding_dim).double()
 
-    def forward(self, g, vertex_type, ids, blocks):
+    def forward(self, vertex_type, blocks):
         device='cuda'
         graph_output = self.graph_model.forward(blocks)[vertex_type].type(torch.float64)
         # Shape of graph_out_dim x batch_size
         graph_emb = self.graph_projection(graph_output)
         # Shape of emb_dim x batch_size
-        language_output = self.language_model(input_ids = g.nodes["Review"].data['input_ids'][ids], 
-           attention_mask=g.nodes["Review"].data['attention_mask'][ids], 
-           token_type_ids=g.nodes["Review"].data['token_type_ids'][ids]).last_hidden_state[:,0].type(torch.float64)
+        language_output = self.language_model(input_ids = blocks[-1].dstdata['input_ids'][vertex_type], 
+           attention_mask=blocks[-1].dstdata['attention_mask'][vertex_type], 
+           token_type_ids=blocks[-1].dstdata['token_type_ids'][vertex_type]).last_hidden_state[:,0].type(torch.float64)
 #         print(language_output.shape)
         language_emb = self.language_projection(language_output)
         
